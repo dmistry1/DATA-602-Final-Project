@@ -8,7 +8,7 @@ import pandas as pd
 # Pass in the current date and send that date to FIRM
 
 def getData(date):
-    firm_api = "https://firms.modaps.eosdis.nasa.gov//api/area/csv/33c0bb32b80831ae1cb4bb94211611c8/MODIS_NRT/world/10/{}".format(date)
+    firm_api = "https://firms.modaps.eosdis.nasa.gov//api/area/csv/33c0bb32b80831ae1cb4bb94211611c8/MODIS_NRT/world/1/{}".format(date)
     print("rest",firm_api)
     df_firm = pd.read_csv(firm_api)
 
@@ -19,14 +19,14 @@ def getData(date):
     # Reordering the data
     df_firm = df_firm[['acq_date', 'latitude', 'longitude', 'frp']]
 
-    # Parsing out the latitude coordinates for the Maui island
+    # # Parsing out the longitude coordinates for the Maui island
     df_firm = df_firm[(df_firm['latitude'] >= 20.500) & (df_firm['latitude'] <= 21.0000)]
 
-    # Parsing out the longitude coordinates for the Maui island
-    df_firm = df_firm[(df_firm['longitude'] >= -154.5000) & (df_firm['longitude'] <= -157.0000)]
-    print(df_firm)
-    # Parsing out the FRP 
-    df_firm = df_firm[(df_firm['frp'] > 100.00)]
+    df_firm = df_firm[(df_firm['longitude'] >= -156.5000) & (df_firm['longitude'] <= -156.0000)]
+    # print(df_firm)
+    # # Parsing out the FRP 
+    # df_firm = df_firm[(df_firm['frp'] > 100.00)]
+
 
     # Sorting latitude
     df_firm = df_firm.sort_values(by='latitude')
