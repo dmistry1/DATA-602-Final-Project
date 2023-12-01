@@ -172,3 +172,56 @@ map_maui = plot_points_on_map(orange_points, red_points)
 map_maui.save("maui_map.html")  # Saves the map to an HTML file
 
 map_maui
+
+
+
+# THIS FUNCTION IS FOR DAILY DATA
+
+import requests
+import pandas as pd
+from math import radians, cos, sin, asin, sqrt
+
+# Function to calculate the great circle distance between two points 
+# on the earth (specified in decimal degrees)
+def haversine(lon1, lat1, lon2, lat2):
+    # convert decimal degrees to radians 
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+
+    # haversine formula 
+    dlon = lon2 - lon1 
+    dlat = lat2 - lat1 
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a)) 
+    r = 6371 # Radius of earth in kilometers. Use 3956 for miles
+    return c * r
+
+# Function to get the nearest weather station
+def get_nearest_station(latitude, longitude):
+    stations = {
+        '91190022516': (20.8986, -156.4305),  # Station 1 coordinates
+        '99738499999': (20.7850, -156.9514)   # Station 2 coordinates
+    }
+    distances = {station: haversine(longitude, latitude, *coords) for station, coords in stations.items()}
+    return min(distances, key=distances.get)
+
+# Function to retrieve GSOD data for the nearest station
+def get_gsod_data(date, latitude, longitude):
+    nearest_station = get_nearest_station(latitude, longitude)
+    api_token = 'zgMwINDQNvylBcCiyyrymXezccJNOZyp'  # Replace with your actual API token
+    url = f'https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-summary-of-the-day&stations={nearest_station}&startDate={date}&endDate={date}&format=json'
+    headers = {'token': api_token}
+    
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        # Load data into a DataFrame
+        df = pd.DataFrame(response.json())
+        return df
+    else:
+        print(f'Failed to retrieve data: {response.status_code}')
+        return pd.DataFrame()
+
+# Example usage:
+# Provide your API token and call the function with the required date and coordinates.
+df = get_gsod_data('2023-11-10', 20.9, -156.5)
+
+print(df)
