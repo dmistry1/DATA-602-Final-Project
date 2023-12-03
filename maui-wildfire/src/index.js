@@ -5,6 +5,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+const mapContainer = document.getElementById("map-container");
 root.render(
   <React.StrictMode>
     <App />
