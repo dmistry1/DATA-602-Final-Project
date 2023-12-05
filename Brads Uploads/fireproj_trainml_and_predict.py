@@ -280,9 +280,13 @@ def get_square_corners(lat, lon, distance_km=0.5):
     return [ne, se, sw, nw, ne]  # Return coordinates to form a closed square
 
 # Function to determine circle size based on prediction score
-def get_circle_radius(prediction_score):
-    # This is a simple linear scaling. You can adjust the scaling factor as needed.
-    return prediction_score * 10000000  # for example, 10 meters per score unit
+def get_circle_radius(prediction_score, min_radius=1000, max_radius=8500):
+    # Scale the prediction score (0 to 1) to the radius range (min_radius to max_radius)
+    scaled_radius = prediction_score * (max_radius - min_radius) + min_radius
+
+    # Ensure the radius does not go below the minimum or above the maximum
+    return max(min(scaled_radius, max_radius), min_radius)
+
 
 
 # Function to create a map with fire locations marked as squares
