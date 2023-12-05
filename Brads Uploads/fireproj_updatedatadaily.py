@@ -101,6 +101,31 @@ def update_data():
     # Save the combined data back to CSV
     combined_data.to_csv(file_path, index=False)
 
+    # Update fire_weather_dates_ML_binary.csv
+    binary_file_path = '/content/drive/My Drive/fire_weather_dates_ML_binary.csv'
+
+    # Load or create the binary data DataFrame
+    try:
+        binary_data = pd.read_csv(binary_file_path)
+        binary_data['date'] = pd.to_datetime(binary_data['date'])
+    except FileNotFoundError:
+        binary_data = pd.DataFrame(columns=['date', 'Fire_exist'])
+
+    # Check for each day in combined_data if there was an FRP > 0
+    combined_data['DATE'] = pd.to_datetime(combined_data['DATE'])
+    new_rows = []
+    for date in pd.date_range(start=binary_data['date'].max() + timedelta(days=1), end=combined_data['DATE'].max()):
+        fire_exist = int(combined_data[combined_data['DATE'] == date]['frp'].max() > 0)
+        new_rows.append({'date': date, 'Fire_exist': fire_exist})
+
+    # Concatenate new rows to the binary data DataFrame
+    binary_data = pd.concat([binary_data, pd.DataFrame(new_rows)], ignore_index=True)
+
+    # Save the updated binary data back to CSV
+    binary_data['date'] = binary_data['date'].dt.strftime('%m/%d/%Y')
+    binary_data.to_csv(binary_file_path, index=False)
+
+
     return combined_data
 
 # Example usage
