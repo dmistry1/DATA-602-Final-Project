@@ -10,55 +10,84 @@ Original file is located at
 from google.colab import drive
 drive.mount('/content/drive')
 
-#train the model on all available data
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 
-# Load the datasets
-df_weather = pd.read_csv('/content/drive/My Drive/combined_fire_weather_data_pastyr.csv')
-df_fire = pd.read_csv('/content/drive/My Drive/fire_weather_dates_ML_binary.csv')
+def train_model_on_data_until(date):
+    # Load the datasets
+    df_weather = pd.read_csv('/content/drive/My Drive/combined_fire_weather_data_pastyr.csv')
+    df_fire = pd.read_csv('/content/drive/My Drive/fire_weather_dates_ML_binary.csv')
 
-# Include DATE in df_weather for merging, but it's not a feature for training
-columns_to_use = ['DATE', 'TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
-df_weather = df_weather[columns_to_use]
+    # Convert 'DATE' columns to datetime
+    df_weather['DATE'] = pd.to_datetime(df_weather['DATE'])
+    df_fire['DATE'] = pd.to_datetime(df_fire['date'])
+    df_fire.drop('date', axis=1, inplace=True)
 
-# Convert 'DATE' columns to datetime
-df_weather['DATE'] = pd.to_datetime(df_weather['DATE'])
-df_fire['DATE'] = pd.to_datetime(df_fire['date'])
-df_fire.drop('date', axis=1, inplace=True)  # Drop the original 'date' column to avoid duplication
+    # Filter the dataframes to remove dates beyond the given date
+    cutoff_date = pd.to_datetime(date)
+    df_weather = df_weather[df_weather['DATE'] <= cutoff_date]
+    df_fire = df_fire[df_fire['DATE'] <= cutoff_date]
 
+    # Make sure to include the date 07/05/2023
+    crucial_date = pd.to_datetime('2023-07-05')
+    crucial_data = df_weather[df_weather['DATE'] == crucial_date]
+    crucial_fire_data = df_fire[df_fire['DATE'] == crucial_date]
 
-# Remove duplicate dates, keeping the first occurrence
-# Note that weather info doesn't change for multiple entries of the same DATE
-# so this has no bearing on training the MODEL
-# multiple dates are kept so that we can map the fire locations
-df_weather_no_duplicates = df_weather.drop_duplicates(subset='DATE', keep='first')
+    # Exclude the crucial date from the rest of the dataset for random splitting
+    df_weather = df_weather[df_weather['DATE'] != crucial_date]
+    df_fire = df_fire[df_fire['DATE'] != crucial_date]
 
-# Merge the datasets on the 'DATE' column
-combined_df = pd.merge(df_weather_no_duplicates, df_fire, on='DATE', how = 'inner')
+    # Continue with your existing logic...
+    columns_to_use = ['DATE', 'TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+    df_weather = df_weather[columns_to_use]
+    df_weather_no_duplicates = df_weather.drop_duplicates(subset='DATE', keep='first')
+    combined_rest = pd.merge(df_weather_no_duplicates, df_fire, on='DATE', how='inner')
 
-# Define features (X) and target (y)
-features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
-X = combined_df[features]
-y = combined_df['Fire_exist']
+    features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
 
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Define features (X) and target (y) for the rest of the data
+    X_rest = combined_rest[features]
+    y_rest = combined_rest['Fire_exist']
 
-# Create logistic regression model
-model = LogisticRegression()
+    # Define features and target for the crucial date
+    X_crucial = crucial_data[features]
+    y_crucial = crucial_fire_data['Fire_exist']
 
-# Train the model
-model.fit(X_train, y_train)
+    # Check class distribution in crucial data
+    #print("Crucial data class distribution:\n", y_crucial.value_counts())
 
-# Predict on the test set
-y_pred = model.predict(X_test)
+    # Combine crucial data with the rest of the data
+    X_combined = pd.concat([X_crucial, X_rest], ignore_index=True)
+    y_combined = pd.concat([y_crucial, y_rest], ignore_index=True)
 
-# Evaluate the model
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print(classification_report(y_test, y_pred))
+    # Check combined class distribution
+    #print("Combined data class distribution:\n", y_combined.value_counts())
+
+    # Split data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X_combined, y_combined, test_size=0.2, random_state=42)
+
+    # Create logistic regression model
+    model = LogisticRegression()
+
+    # Train the model
+    model.fit(X_train, y_train)
+
+    # Predict on the test set
+    y_pred = model.predict(X_test)
+
+    # Evaluate the model
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+    print(classification_report(y_test, y_pred, zero_division = 0))
+
+    return model
+
+# Example usage
+#train_model_on_data_until('2023-12-01')
+#Note that the model does not work before 2023-07-05
+# and note that for a lot of dates, there's so few fire dates that the model
+# predicts it is always best to predict 0
 
 # and then makes a prediction.
 import pandas as pd
@@ -77,6 +106,8 @@ def get_old_prediction(date):
   prediction_input = df_filtered[required_features]
 
   # Use the trained model to predict the probability
+  model = train_model_on_data_until(date)
+
   predicted_probabilities = model.predict_proba(prediction_input)
   confidence_level = predicted_probabilities[0][1]
   predicted_fire_risk = model.predict(prediction_input)[0]
@@ -91,8 +122,8 @@ def get_old_prediction(date):
 
 
 #example usage
-#df_pre = get_old_prediction('2023-08-08')
-#print(df_pre.head())
+df_pre = get_old_prediction('2023-12-01')
+print(df_pre.head())
 
 import folium
 import pandas as pd
