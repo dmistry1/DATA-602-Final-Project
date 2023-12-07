@@ -11,24 +11,23 @@ import Spinner from 'react-bootstrap/Spinner';
 function App() {
 
   const [currentDateMinusTwo, setCurrentDateMinusTwo] = useState(null);
-  const [selectedDate, setSelectedDate] = useState('8/9/2023');
+  const [selectedDate, setSelectedDate] = useState('2023-08-08');
   const [mapHtml, setMapHtml] = useState();
   const [historicalMapHtml, setHistoricalMapHtml] = useState('');
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     setLoading(true)
-    fetch('https://maui-wildfire-wddg2qmg6a-ue.a.run.app').then(res => res.text()).then(mapHtml => {
+    fetch('http://localhost:8080').then(res => res.text()).then(mapHtml => {
       setMapHtml(mapHtml)
-
     });
     setLoading(false)
   }, []);
-  // useEffect(()  => {
-  //   sendDataToBackend()
-  // }, [mapHtml])
+
   const sendDataToBackend = async () => {
+    console.log('tes', selectedDate)
     try {
-      const response = await fetch('https://maui-wildfire-wddg2qmg6a-ue.a.run.app/historical_fire', {
+      // const response = await fetch('https://maui-wildfire-wddg2qmg6a-ue.a.run.app/historical_fire', {
+      const response = await fetch('http://localhost:8080/historical_fire', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,7 +50,7 @@ function App() {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     console.log(`${year}-${month}-${day}`)
-    setSelectedDate(`${month}/${day}/${year}`);
+    setSelectedDate(`${year}-${month}-${day}`);
   }
 
   // Getting the current Date and subtract two days for it.
@@ -85,11 +84,10 @@ function App() {
               </Card.Title>
             <Card.Text>
             <span className="text">
-              This project shows the number of active fires in Maui and predict where and how the fire will 
-              spread in the near future. This utilizes satellite data from NASA Fire Information for Resource Management System
+              This project shows the number of active fires in Maui and predict if weather conditions are likely to produce active fires.
+              This utilizes satellite data from NASA Fire Information for Resource Management System
               (<a href='https://firms.modaps.eosdis.nasa.gov/' target="_blank">FIRM</a>) 
-              and hourly weather data from Global Summary of the Day
-              (<a href='https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc:C00516' target='_blank'>GSOD</a>). 
+              and weather data from National Oceanic and Atmospheric Administration(<a href='https://www.noaa.gov/' target="_blank">NOAA</a>)
             </span>
             </Card.Text>
           </Card.Body>
@@ -125,12 +123,12 @@ function App() {
           <h1 className='title'>Historical Fire</h1>
           <hr/>
           <Card.Text>
-          <span className='text'>Search for any days within the past year to see the active fires accros Maui</span>
+          <span className='text'>Search for any days within the past year to see the active fires across Maui</span>
           </Card.Text>
           <DatePicker
           className='date-picker '
-          minDate={new Date('11-29-2022')}
-          maxDate={currentDate}
+          minDate={new Date('07-05-2023')}
+          maxDate={currentDateMinusTwo}
           dateFormat="yyyy-MM-dd"
           showMonthDropdown
           showYearDropdown
@@ -153,46 +151,6 @@ function App() {
       </Card>
     </CardGroup>
       </header>
-      
-      {/* <div className="about card mt-5">
-        <div className="card-body">
-        <h3 className='title card-title'>Active Fire Map</h3>
-        <span className='text'>This map repersents if there are active fire's in Maui and predict where the fire will spread in the next 24-48 hours.</span>
-          {loading ? (
-            <h1>LOADING...</h1>
-          ): (
-            <div dangerouslySetInnerHTML={{ __html: mapHtml }} />
-          )}
-        </div>
-      </div>
-     <div className="about card mt-5">
-        <div className="card-body">
-        <h3 className='title card-title'>Historical Fire</h3>
-        <span className='text'>Search for any days within the past year to see the active fires in maui</span>
-        <div>
-        <DatePicker
-          className='date-picker'
-          minDate={new Date('11-29-2022')}
-          maxDate={currentDate}
-          dateFormat="yyyy-MM-dd"
-          showMonthDropdown
-          showYearDropdown
-          peekNextMonth
-          placeholderText='Select date...'
-          value={selectedDate}
-          onChange={handleDateChange}
-        >
-        </DatePicker>
-        </div>
-
-        <Button
-          onClick={sendDataToBackend}
-        >
-          Show Fire Map
-        </Button>
-        <div dangerouslySetInnerHTML={{ __html: historicalMapHtml }} />
-        </div>
-      </div> */}
     </div>
       
   );

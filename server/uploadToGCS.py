@@ -19,4 +19,3 @@ def upload_csv_to_gcs(bucket_name, file_name, df):
     # Upload the updated CSV data back to Google Cloud Storage
     blob.upload_from_string(updated_csv_data, content_type='text/csv')
 
-    print(f"Data updated and file uploaded to Google Cloud Storage: {file_name}")
