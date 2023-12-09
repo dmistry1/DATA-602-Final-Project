@@ -1,0 +1,12 @@
+flask
+gunicorn
+datetime
+numpy
+requests
+pandas
+flask-cors
+google-cloud-storage
+google-cloud-bigquery
+scikit-learn
+folium
+geopy
