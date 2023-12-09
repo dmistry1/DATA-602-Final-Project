@@ -76,6 +76,12 @@ print(classification_report(y_test, y_pred))
 # of whether the most recent data point in our data has past_day_fire_bin = 1 or 0
 # and then makes a prediction.
 
+
+#I'm going to start with pulling the most recent hourly weather data, ...
+# I need to convert Temp to fahrenheit and adjust the rest of the flags as well
+# It looks like GSOD has different measurements
+# year, hourly WDSP is in meters per second while GSOD WDSP is in .1 knots
+
 #I'm going to start with pulling the most recent hourly weather data, ...
 # I need to convert Temp to fahrenheit and adjust the rest of the flags as well
 # It looks like GSOD has different measurements
@@ -94,28 +100,26 @@ df = pd.read_csv(url, low_memory=False)
 column_renames = {'WND': 'WDSP', 'DEW': 'DEWP', 'TMP': 'TEMP', 'AA1': 'PRCP'}
 df.rename(columns=column_renames, inplace=True)
 
+# Function to check for '9999' in the column
+def contains_9999(value):
+    return '9999' in value
+
 # Convert columns to string to safely perform string operations
 df['WDSP'] = df['WDSP'].astype(str)
 df['DEWP'] = df['DEWP'].astype(str)
 df['TEMP'] = df['TEMP'].astype(str)
 df['PRCP'] = df['PRCP'].astype(str)
 
-# Function to check and filter based on '9999' value
-def filter_9999(value):
-    parts = value.split(',')
-    if len(parts) > 1 and parts[1].startswith('9999'):
-        return False
-    return True
-
-# Filter out rows based on '9999' value
-df = df[df['WDSP'].apply(lambda x: filter_9999(x))]
-df = df[df['DEWP'].apply(lambda x: filter_9999(x))]
-df = df[df['TEMP'].apply(lambda x: filter_9999(x))]
-df = df[df['PRCP'].apply(lambda x: filter_9999(x))]
+# Filter out rows with '9999' in the relevant columns
+df = df[~df['WDSP'].apply(contains_9999)]
+df = df[~df['DEWP'].apply(contains_9999)]
+df = df[~df['TEMP'].apply(contains_9999)]
+df = df[~df['PRCP'].apply(contains_9999)]
 
 
 # Convert the DATE column to datetime and truncate to just the date part
 df['DATE'] = pd.to_datetime(df['DATE']).dt.date
+
 
 # Extract the wind speed part from the 'WDSP' column
 # Assuming the wind speed (in tenths of meters per second) is the fourth element after splitting
