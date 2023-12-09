@@ -28,7 +28,6 @@ def receive_date():
 
 @app.route('/')
 def mauiWildfire():
-    # Get the current date
     cur_date = datetime.now().date()
 
     combinedFireWeatherData = getGoogleBucket.getData('combined_fire_weather_data_past_yr')
@@ -108,24 +107,19 @@ def mauiWildfire():
                 # Updating the binary file
                 fire_weather_ml_binary = getGoogleBucket.getData('fire_weather_dates_ml_binary')
                 # Load or create the binary data DataFrame
-                try:
-                    binary_data = pd.read_csv(fire_weather_ml_binary)
-                    binary_data['date'] = pd.to_datetime(binary_data['date'])
-                except FileNotFoundError:
-                    binary_data = pd.DataFrame(columns=['date', 'Fire_exist'])
-                
+                fire_weather_ml_binary['date'] = pd.to_datetime(fire_weather_ml_binary['date'])
+
                 # Check for each day in combined_data if there was an FRP > 0
                 combined_data['DATE'] = pd.to_datetime(combined_data['DATE'])
                 new_rows = []
-                for date in pd.date_range(start=binary_data['date'].max() + timedelta(days=1), end=combined_data['DATE'].max()):
+                for date in pd.date_range(start=fire_weather_ml_binary['date'].max() + timedelta(days=1), end=combined_data['DATE'].max()):
                     fire_exist = int(combined_data[combined_data['DATE'] == date]['frp'].max() > 0)
                     new_rows.append({'date': date, 'Fire_exist': fire_exist})
 
                 # Concatenate new rows to the binary data DataFrame
-                binary_data = pd.concat([binary_data, pd.DataFrame(new_rows)], ignore_index=True)
+                binary_data = pd.concat([fire_weather_ml_binary, pd.DataFrame(new_rows)], ignore_index=True)
 
                 uploadToGCS.upload_csv_to_gcs('fire_weather_dates_ml_binary','fire_weather_dates_ml_binary.csv', binary_data)
-
 
     prediction  = getMLPrediction.getPrediction()
     map_maui = createFireMap.getFireMap(prediction)

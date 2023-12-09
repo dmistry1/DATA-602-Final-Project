@@ -62,7 +62,7 @@ def create_fire_map(date):
         fill_color=circle_color
     ).add_to(maui_map)
 
-    # maui_map.save(f'maui_fire_map_with_predictions_{date}.html')
+    maui_map.save(f'maui_fire_map_with_predictions_{date}.html')
     return maui_map
 
 # Function to determine circle size based on prediction score
@@ -75,14 +75,13 @@ def get_circle_radius(prediction_score, min_radius=1000, max_radius=8500):
 
 # Function to get fire data from FIRMS API for a specific date and parse out the data for just Maui
 def get_fire_data(date):
-    firm_api = f"https://firms.modaps.eosdis.nasa.gov//api/area/csv/33c0bb32b80831ae1cb4bb94211611c8/MODIS_NRT/world/1/{date}"
-    df_firm = pd.read_csv(firm_api)
-    df_firm = df_firm[['acq_date', 'latitude', 'longitude', 'frp']]
-    df_firm = df_firm[(df_firm['latitude'] >= 20.500) & (df_firm['latitude'] <= 21.0000)]
-    df_firm = df_firm[(df_firm['longitude'] >= -156.5000) & (df_firm['longitude'] <= -156.0000)]
-    df_firm = df_firm[df_firm['frp'] > 0]
-    df_firm = df_firm.sort_values(by='latitude')
-    return df_firm
+    data = getGoogleBucket.getData('combined_fire_weather_data_past_yr')	
+    df = pd.DataFrame(data)	
+    df['DATE'] = pd.to_datetime(df['DATE'])	
+    # Retrieve all rows with the date '8/9/2023'	
+    desired_date = pd.to_datetime(date)	
+    result_df = df[df['DATE'] == desired_date]	
+    return result_df
 
 # Function to calculate square corners around a point
 def get_square_corners(lat, lon, distance_km=0.5):

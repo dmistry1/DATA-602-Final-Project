@@ -9,7 +9,6 @@ def getPrediction():
     df_weather = getGoogleBucket.getData('combined_fire_weather_data_past_yr')
     df_fire = getGoogleBucket.getData('fire_weather_dates_ml_binary')
 
-
     # Include DATE in df_weather for merging, but it's not a feature for training
     columns_to_use = ['DATE', 'TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
     df_weather = df_weather[columns_to_use]
@@ -60,24 +59,29 @@ def getPrediction():
     column_renames = {'WND': 'WDSP', 'DEW': 'DEWP', 'TMP': 'TEMP', 'AA1': 'PRCP'}
     df.rename(columns=column_renames, inplace=True)
 
+    # Function to check for '9999' in the column
+    def contains_9999(value):
+        return '9999' in value
+
+
     # Convert columns to string to safely perform string operations
     df['WDSP'] = df['WDSP'].astype(str)
     df['DEWP'] = df['DEWP'].astype(str)
     df['TEMP'] = df['TEMP'].astype(str)
     df['PRCP'] = df['PRCP'].astype(str)
 
-    # Function to check and filter based on '9999' value
-    def filter_9999(value):
-        parts = value.split(',')
-        if len(parts) > 1 and parts[1].startswith('9999'):
-            return False
-        return True
+    # # Function to check and filter based on '9999' value
+    # def filter_9999(value):
+    #     parts = value.split(',')
+    #     if len(parts) > 1 and parts[1].startswith('9999'):
+    #         return False
+    #     return True
 
-    # Filter out rows based on '9999' value
-    df = df[df['WDSP'].apply(lambda x: filter_9999(x))]
-    df = df[df['DEWP'].apply(lambda x: filter_9999(x))]
-    df = df[df['TEMP'].apply(lambda x: filter_9999(x))]
-    df = df[df['PRCP'].apply(lambda x: filter_9999(x))]
+    # Filter out rows with '9999' in the relevant columns
+    df = df[~df['WDSP'].apply(contains_9999)]
+    df = df[~df['DEWP'].apply(contains_9999)]
+    df = df[~df['TEMP'].apply(contains_9999)]
+    df = df[~df['PRCP'].apply(contains_9999)]
 
 
     # Convert the DATE column to datetime and truncate to just the date part
