@@ -5,7 +5,7 @@ This project shows the number of active fires in Maui and predict if weather con
 
 ## Local Setup
 ### Prerequisites 
-- node version: `21.1.0`
+- node version: `>20.0.0`
 - `python3`
 - `Docker Desktop`
 This project is developed using React + Flask
