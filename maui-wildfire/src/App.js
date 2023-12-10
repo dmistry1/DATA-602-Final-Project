@@ -129,7 +129,7 @@ function App() {
           </Card.Text>
           <DatePicker
           className='date-picker '
-          minDate={new Date('07-05-2023')}
+          minDate={new Date('08-08-2023')}
           maxDate={currentDateMinusTwo}
           dateFormat="yyyy-MM-dd"
           showMonthDropdown
