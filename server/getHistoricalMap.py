@@ -5,6 +5,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 from geopy.distance import geodesic
+from imblearn.over_sampling import SMOTE
+from xgboost import XGBClassifier
+
 import branca.colormap as cm
 
 # Function to create a map with fire locations marked as squares
@@ -62,7 +65,7 @@ def create_fire_map(date):
         fill_color=circle_color
     ).add_to(maui_map)
 
-    maui_map.save(f'maui_fire_map_with_predictions_{date}.html')
+    # maui_map.save(f'maui_fire_map_with_predictions_{date}.html')
     return maui_map
 
 # Function to determine circle size based on prediction score
@@ -102,33 +105,69 @@ def get_square_corners(lat, lon, distance_km=0.5):
 
 
 def get_old_prediction(date):
-  df = getGoogleBucket.getData('combined_fire_weather_data_past_yr')
-  # df = pd.read_csv(df_weather)
-  # print('df', df)
-  df['DATE'] = pd.to_datetime(df['DATE'])
-  # Format the input date string to a datetime object
-  input_date = pd.to_datetime(date)
-  # Filter the DataFrame to only include rows with the specified date
-  df_filtered = df[df['DATE'] == input_date]
+    df_weather = getGoogleBucket.getData('combined_fire_weather_data_past_yr')
+    df_fire = getGoogleBucket.getData('fire_weather_dates_ml_binary')   
 
-  required_features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+    # Convert 'DATE' columns to datetime
+    df_weather['DATE'] = pd.to_datetime(df_weather['DATE'])
+    df_fire['DATE'] = pd.to_datetime(df_fire['date'])
+    df_fire.drop('date', axis=1, inplace=True)
 
-  prediction_input = df_filtered[required_features]
+    # Filter the dataframes to remove dates beyond the given date
+    cutoff_date = pd.to_datetime(date)
+    df_weather = df_weather[df_weather['DATE'] <= cutoff_date]
+    df_fire = df_fire[df_fire['DATE'] <= cutoff_date]
 
-  # Use the trained model to predict the probability
-  model = tain_model_on_date(date)
+    # Remove duplicate dates
+    df_weather_no_duplicates = df_weather.drop_duplicates(subset='DATE', keep='first')
+    # Merge the datasets on the 'DATE' column
+    combined_df = pd.merge(df_weather_no_duplicates, df_fire, on='DATE', how='inner')
 
-  predicted_probabilities = model.predict_proba(prediction_input)
-  confidence_level = predicted_probabilities[0][1]
-  predicted_fire_risk = model.predict(prediction_input)[0]
+    # Define features (X) and target (y)
+    features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+    X = combined_df[features]
+    y = combined_df['Fire_exist']
 
-  prediction_df = pd.DataFrame({
-      'date': df_filtered['DATE'],
-      'predicted_fire_risk': predicted_fire_risk,
-      'confidence_level': confidence_level
-  })
+    # Split the data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-  return prediction_df
+    # Check the number of minority class samples
+    minority_class_size = y_train.sum()
+    n_neighbors_smote = min(minority_class_size - 1, 5)
+
+    # Apply SMOTE with adjusted neighbors
+
+    # Apply SMOTE with adjusted neighbors
+    smote = SMOTE(k_neighbors=n_neighbors_smote)
+    X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+
+    # Initialize XGBoost model with the best parameters
+    best_params = {'colsample_bytree': 0.6, 'gamma': 0.5, 'max_depth': 4, 'min_child_weight': 1, 'subsample': 1.0}
+    model = XGBClassifier(**best_params)
+
+    # Train the model with the best parameters on the balanced dataset
+    model.fit(X_train_smote, y_train_smote)
+
+    # Filter the data for the given date
+    prediction_input = combined_df[combined_df['DATE'] == pd.to_datetime(date)][features]
+
+    # Make prediction for the given date
+    predicted_fire_risk = model.predict(prediction_input)
+    predicted_probabilities = model.predict_proba(prediction_input)
+
+    # Since the output will be in an array, extract the single prediction value
+    predicted_fire_risk = predicted_fire_risk[0] if len(predicted_fire_risk) > 0 else None
+    confidence_level = predicted_probabilities[0][1] if len(predicted_probabilities) > 0 else None
+
+
+    # Convert the output to a DataFrame
+    prediction_df = pd.DataFrame({
+        'date': [pd.to_datetime(date)],
+        'predicted_fire_risk': [predicted_fire_risk],
+        'confidence_level': [confidence_level]
+    })
+
+    return prediction_df
 
 def tain_model_on_date(date):
     # Load the datasets

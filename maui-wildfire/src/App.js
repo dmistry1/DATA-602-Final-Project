@@ -85,10 +85,10 @@ function App() {
               </Card.Title>
             <Card.Text>
             <span className="text">
-              This project shows the number of active fires in Maui and predict if weather conditions are likely to produce active fires.
-              This utilizes satellite data from NASA Fire Information for Resource Management System
+              This project shows the number of active fires in Maui and predicts if weather conditions are likely to produce active fires.
+              This utilizes satellite data from the NASA Fire Information for Resource Management System
               (<a href='https://firms.modaps.eosdis.nasa.gov/' target="_blank">FIRM</a>) 
-              and weather data from National Oceanic and Atmospheric Administration(<a href='https://www.noaa.gov/' target="_blank">NOAA</a>)
+              and weather data from the National Oceanic and Atmospheric Administration(<a href='https://www.noaa.gov/' target="_blank">NOAA</a>)
             </span>
             </Card.Text>
           </Card.Body>
