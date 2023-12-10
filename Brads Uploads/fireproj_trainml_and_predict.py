@@ -18,54 +18,298 @@ Original file is located at
 from google.colab import drive
 drive.mount('/content/drive')
 
-import pandas as pd
+# #THIS IS THE LOOKING AT TRAINING A MODEL AND THEN GETTING THE BEST PARAMETERS
+# #ITS COMMENTED OUT BECAUSE I SAVED THE BEST PARAMETERS SOT HAT I CAN USE IT IN THE
+# # NEXT STEP
+# import pandas as pd
+# from sklearn.metrics import precision_recall_curve, classification_report, confusion_matrix
+# from xgboost import XGBClassifier
+# from sklearn.model_selection import train_test_split
+
+# # Load the datasets
+# df_weather = pd.read_csv('/content/drive/My Drive/combined_fire_weather_data_pastyr.csv')
+# df_fire = pd.read_csv('/content/drive/My Drive/fire_weather_dates_ML_binary.csv')
+
+# # Make a copy and convert 'DATE' columns to datetime
+# df_weather = df_weather.copy()
+# df_weather['DATE'] = pd.to_datetime(df_weather['DATE'])
+
+# df_fire = df_fire.copy()
+# df_fire['DATE'] = pd.to_datetime(df_fire['date'])
+# df_fire.drop('date', axis=1, inplace=True)
+
+# # Select relevant columns
+# columns_to_use = ['DATE', 'TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+# df_weather = df_weather[columns_to_use]
+
+# # Remove duplicate dates
+# df_weather_no_duplicates = df_weather.drop_duplicates(subset='DATE', keep='first')
+
+# # Merge the datasets on the 'DATE' column
+# combined_df = pd.merge(df_weather_no_duplicates, df_fire, on='DATE', how='inner')
+
+# # Define features (X) and target (y)
+# features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+# X = combined_df[features]
+# y = combined_df['Fire_exist']
+
+# from imblearn.over_sampling import SMOTE
+# from xgboost import XGBClassifier
+# from sklearn.model_selection import train_test_split
+# from sklearn.metrics import classification_report, confusion_matrix
+
+# # Assuming X, y are your features and labels
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# # Apply SMOTE
+# smote = SMOTE()
+# X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+
+# # Train XGBoost model
+# model = XGBClassifier(scale_pos_weight=sum(y_train_smote==0)/sum(y_train_smote==1))
+# model.fit(X_train_smote, y_train_smote)
+
+# # Predict on test set
+# y_pred = model.predict(X_test)
+
+# # Evaluate the model
+# print(classification_report(y_test, y_pred))
+# print(confusion_matrix(y_test, y_pred))
+
+# from sklearn.model_selection import GridSearchCV
+
+# # Define parameter grid
+# param_grid = {
+#     'max_depth': [3, 4, 5],
+#     'min_child_weight': [1, 5, 10],
+#     'gamma': [0.5, 1, 1.5, 2],
+#     'subsample': [0.6, 0.8, 1.0],
+#     'colsample_bytree': [0.6, 0.8, 1.0],
+# }
+
+# # Initialize XGBClassifier
+# xgb_model = XGBClassifier(scale_pos_weight=sum(y_train_smote==0)/sum(y_train_smote==1))
+
+# # Set up GridSearchCV
+# grid_search = GridSearchCV(estimator=xgb_model, param_grid=param_grid, scoring='roc_auc', n_jobs=-1, cv=3, verbose=2)
+# grid_search.fit(X_train_smote, y_train_smote)
+
+# # Best parameters
+# #print("Best Parameters:", grid_search.best_params_)
+
+# # Train model using best parameters
+# best_model = grid_search.best_estimator_
+# best_model.fit(X_train_smote, y_train_smote)
+
+# # Predict and evaluate
+# y_pred_best = best_model.predict(X_test)
+# print(classification_report(y_test, y_pred_best))
+# print(confusion_matrix(y_test, y_pred_best))
+
+# import pickle
+
+# # Assuming `grid_search` is your GridSearchCV object
+# best_params = grid_search.best_params_
+
+# # Save to a file
+# with open('best_params.pkl', 'wb') as file:
+#     pickle.dump(best_params, file)
+
+from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import classification_report, confusion_matrix
+from imblearn.over_sampling import SMOTE
 
 # Load the datasets
 df_weather = pd.read_csv('/content/drive/My Drive/combined_fire_weather_data_pastyr.csv')
 df_fire = pd.read_csv('/content/drive/My Drive/fire_weather_dates_ML_binary.csv')
 
-# Include DATE in df_weather for merging, but it's not a feature for training
+# Make a copy and convert 'DATE' columns to datetime
+df_weather = df_weather.copy()
+df_weather['DATE'] = pd.to_datetime(df_weather['DATE'])
+
+df_fire = df_fire.copy()
+df_fire['DATE'] = pd.to_datetime(df_fire['date'])
+df_fire.drop('date', axis=1, inplace=True)
+
+# Select relevant columns
 columns_to_use = ['DATE', 'TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
 df_weather = df_weather[columns_to_use]
 
-# Convert 'DATE' columns to datetime
-df_weather['DATE'] = pd.to_datetime(df_weather['DATE'])
-df_fire['DATE'] = pd.to_datetime(df_fire['date'])
-df_fire.drop('date', axis=1, inplace=True)  # Drop the original 'date' column to avoid duplication
-
-
-# Remove duplicate dates, keeping the first occurrence
-# Note that weather info doesn't change for multiple entries of the same DATE
-# so this has no bearing on training the MODEL
-# multiple dates are kept so that we can map the fire locations
+# Remove duplicate dates
 df_weather_no_duplicates = df_weather.drop_duplicates(subset='DATE', keep='first')
 
 # Merge the datasets on the 'DATE' column
-combined_df = pd.merge(df_weather_no_duplicates, df_fire, on='DATE', how = 'inner')
+combined_df = pd.merge(df_weather_no_duplicates, df_fire, on='DATE', how='inner')
 
 # Define features (X) and target (y)
 features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
 X = combined_df[features]
 y = combined_df['Fire_exist']
 
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-# Create logistic regression model
-model = LogisticRegression()
+# Apply SMOTE to balance the dataset
+smote = SMOTE()
+X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
 
-# Train the model
-model.fit(X_train, y_train)
+# Initialize XGBoost model with the best parameters
+best_params = {'colsample_bytree': 0.6, 'gamma': 0.5, 'max_depth': 4, 'min_child_weight': 1, 'subsample': 1.0}
+model = XGBClassifier(**best_params)
+
+# Train the model with the best parameters on the balanced dataset
+model.fit(X_train_smote, y_train_smote)
 
 # Predict on the test set
 y_pred = model.predict(X_test)
 
 # Evaluate the model
-print("Accuracy:", accuracy_score(y_test, y_pred))
 print(classification_report(y_test, y_pred))
+print(confusion_matrix(y_test, y_pred))
+
+
+# Add the test set indices to X_test for merging
+X_test_with_index = X_test.copy()
+X_test_with_index['index'] = X_test.index
+
+# Create a DataFrame with test features, actual labels, and predictions
+results_df = X_test_with_index.join(y_test, on='index', how='left', rsuffix='_actual')
+results_df['predicted_fire_risk'] = y_pred
+
+# Rename 'Fire_exist' in y_test to avoid conflict during join
+y_test_renamed = y_test.rename('Fire_exist_actual')
+
+# Join results_df with y_test_renamed and combined_df to get the DATE column
+results_df = results_df.join(y_test_renamed, how='left')
+results_df = results_df.join(combined_df[['DATE']], how='left')
+
+# Filter for the dates where the model predicted a fire
+predicted_fires = results_df[results_df['predicted_fire_risk'] == 1]
+
+# Extract the dates of these predictions
+predicted_fire_dates = predicted_fires['DATE']
+
+# Display the dates
+print(predicted_fire_dates)
+
+# THIS WAS LOF MODEL
+# import pandas as pd
+# import numpy as np
+# from sklearn.neighbors import LocalOutlierFactor
+# from sklearn.preprocessing import StandardScaler
+# from sklearn.metrics import classification_report, confusion_matrix
+
+# # Load the datasets
+# df_weather = pd.read_csv('/content/drive/My Drive/combined_fire_weather_data_pastyr.csv')
+# df_fire = pd.read_csv('/content/drive/My Drive/fire_weather_dates_ML_binary.csv')
+
+# # Make a copy and convert 'DATE' columns to datetime
+# df_weather = df_weather.copy()
+# df_weather['DATE'] = pd.to_datetime(df_weather['DATE'])
+
+# df_fire = df_fire.copy()
+# df_fire['DATE'] = pd.to_datetime(df_fire['date'])
+# df_fire.drop('date', axis=1, inplace=True)
+
+# # Select relevant columns
+# columns_to_use = ['DATE', 'TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+# df_weather = df_weather[columns_to_use]
+
+# # Remove duplicate dates
+# df_weather_no_duplicates = df_weather.drop_duplicates(subset='DATE', keep='first')
+
+# # Merge the datasets on the 'DATE' column
+# combined_df = pd.merge(df_weather_no_duplicates, df_fire, on='DATE', how='inner')
+
+# # Define features (X) and target (y)
+# features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+# X = combined_df[features]
+# y = combined_df['Fire_exist']
+
+# # Scaling the features
+# scaler = StandardScaler()
+# X_scaled = scaler.fit_transform(X)
+
+# # Initialize Local Outlier Factor
+# contamination_estimate = 0.020771513353115726
+# lof = LocalOutlierFactor(n_neighbors=20, contamination=contamination_estimate, novelty=True)
+
+# # Fit the model
+# lof.fit(X_scaled)
+
+# # Predict the outliers
+# y_pred_lof = lof.predict(X_scaled)
+# y_pred_lof = [1 if i == -1 else 0 for i in y_pred_lof]  # Convert to binary labels
+
+# # Evaluation
+# print(classification_report(y, y_pred_lof))
+# print(confusion_matrix(y, y_pred_lof))
+
+# # # Ensure original_data has the same number of rows and is in the same order as X_scaled
+# # assert len(combined_df) == len(y_pred_lof), "The number of rows does not match."
+
+# # # Add the predictions to the original dataset
+# # combined_df['predicted_fire'] = y_pred_lof
+
+# # # Filter the DataFrame for instances predicted as fire
+# # predicted_fires = combined_df[combined_df['predicted_fire'] == 1]
+
+# # # Get the dates of the predicted fire instances
+# # fire_dates = predicted_fires['DATE']
+
+# # # Display the dates
+# # print(fire_dates)
+
+# # THIS IS THE OLD LOGISTIC REGRESSION MODEL
+# import pandas as pd
+# from sklearn.model_selection import train_test_split
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.metrics import accuracy_score, classification_report
+
+# # Load the datasets
+# df_weather = pd.read_csv('/content/drive/My Drive/combined_fire_weather_data_pastyr.csv')
+# df_fire = pd.read_csv('/content/drive/My Drive/fire_weather_dates_ML_binary.csv')
+
+# # Include DATE in df_weather for merging, but it's not a feature for training
+# columns_to_use = ['DATE', 'TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+# df_weather = df_weather[columns_to_use]
+
+# # Convert 'DATE' columns to datetime
+# df_weather['DATE'] = pd.to_datetime(df_weather['DATE'])
+# df_fire['DATE'] = pd.to_datetime(df_fire['date'])
+# df_fire.drop('date', axis=1, inplace=True)  # Drop the original 'date' column to avoid duplication
+
+
+# # Remove duplicate dates, keeping the first occurrence
+# # Note that weather info doesn't change for multiple entries of the same DATE
+# # so this has no bearing on training the MODEL
+# # multiple dates are kept so that we can map the fire locations
+# df_weather_no_duplicates = df_weather.drop_duplicates(subset='DATE', keep='first')
+
+# # Merge the datasets on the 'DATE' column
+# combined_df = pd.merge(df_weather_no_duplicates, df_fire, on='DATE', how = 'inner')
+
+# # Define features (X) and target (y)
+# features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+# X = combined_df[features]
+# y = combined_df['Fire_exist']
+
+# # Split data into training and testing sets
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# # Create logistic regression model
+# model = LogisticRegression()
+
+# # Train the model
+# model.fit(X_train, y_train)
+
+# # Predict on the test set
+# y_pred = model.predict(X_test)
+
+# # Evaluate the model
+# print("Accuracy:", accuracy_score(y_test, y_pred))
+# print(classification_report(y_test, y_pred))
 
 #How can I use this model to predict the next date in the data (11/28/2023)?
 # What I need is something that can be ran every morning that will check
@@ -75,6 +319,12 @@ print(classification_report(y_test, y_pred))
 # Then it pulls the most recent hourly weather data, combines with a check
 # of whether the most recent data point in our data has past_day_fire_bin = 1 or 0
 # and then makes a prediction.
+
+
+#I'm going to start with pulling the most recent hourly weather data, ...
+# I need to convert Temp to fahrenheit and adjust the rest of the flags as well
+# It looks like GSOD has different measurements
+# year, hourly WDSP is in meters per second while GSOD WDSP is in .1 knots
 
 #I'm going to start with pulling the most recent hourly weather data, ...
 # I need to convert Temp to fahrenheit and adjust the rest of the flags as well
@@ -94,28 +344,26 @@ df = pd.read_csv(url, low_memory=False)
 column_renames = {'WND': 'WDSP', 'DEW': 'DEWP', 'TMP': 'TEMP', 'AA1': 'PRCP'}
 df.rename(columns=column_renames, inplace=True)
 
+# Function to check for '9999' in the column
+def contains_9999(value):
+    return '9999' in value
+
 # Convert columns to string to safely perform string operations
 df['WDSP'] = df['WDSP'].astype(str)
 df['DEWP'] = df['DEWP'].astype(str)
 df['TEMP'] = df['TEMP'].astype(str)
 df['PRCP'] = df['PRCP'].astype(str)
 
-# Function to check and filter based on '9999' value
-def filter_9999(value):
-    parts = value.split(',')
-    if len(parts) > 1 and parts[1].startswith('9999'):
-        return False
-    return True
-
-# Filter out rows based on '9999' value
-df = df[df['WDSP'].apply(lambda x: filter_9999(x))]
-df = df[df['DEWP'].apply(lambda x: filter_9999(x))]
-df = df[df['TEMP'].apply(lambda x: filter_9999(x))]
-df = df[df['PRCP'].apply(lambda x: filter_9999(x))]
+# Filter out rows with '9999' in the relevant columns
+df = df[~df['WDSP'].apply(contains_9999)]
+df = df[~df['DEWP'].apply(contains_9999)]
+df = df[~df['TEMP'].apply(contains_9999)]
+df = df[~df['PRCP'].apply(contains_9999)]
 
 
 # Convert the DATE column to datetime and truncate to just the date part
 df['DATE'] = pd.to_datetime(df['DATE']).dt.date
+
 
 # Extract the wind speed part from the 'WDSP' column
 # Assuming the wind speed (in tenths of meters per second) is the fourth element after splitting
@@ -197,46 +445,33 @@ last_valid_observation['past_day_fire_bin'] = most_recent_fire_bin
 # Display the combined data
 print(last_valid_observation)
 
-# and then makes a prediction.
+import pandas as pd
 
-required_features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
+# Assuming 'last_valid_observation' is a DataFrame with a single row
+# List of features used during the training of the XGBoost model
+features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
 
-# Assuming 'last_valid_observation' already has these features, we proceed to make a prediction
-prediction_input = last_valid_observation[required_features]
+# Select only the required features from last_valid_observation
+prediction_input_df = last_valid_observation[features]
 
-# Use the trained model to predict the probability
-predicted_probabilities = model.predict_proba(prediction_input)
+# Use the trained XGBoost model to make a prediction
+# Note: Replace 'model' with your actual trained XGBoost model variable
+predicted_fire_risk = model.predict(prediction_input_df)
 
-# The result will be in the form of an array of probabilities for each class ([probability of 0, probability of 1])
-# For binary classification, the probability of class 1 can be taken as the confidence level
+# Since the output will be in an array, extract the single prediction value
+predicted_fire_risk = predicted_fire_risk[0]
+
+# Get the predicted probabilities for each class
+predicted_probabilities = model.predict_proba(prediction_input_df)
+
+# Extract the probability of the positive class (assuming it is the second column)
 confidence_level = predicted_probabilities[0][1]
-
-# Output the prediction and confidence level
-predicted_fire_risk = model.predict(prediction_input)
-print("Predicted Fire Risk for today:", predicted_fire_risk[0])
-print("Confidence Level of the prediction:", confidence_level)
-
-
-required_features = ['TEMP', 'past_day_fire_bin', 'WDSP', 'DEWP', 'PRCP']
-
-# Assuming 'last_valid_observation' already has these features, we proceed to make a prediction
-prediction_input = last_valid_observation[required_features]
-
-# Use the trained model to predict the probability
-predicted_probabilities = model.predict_proba(prediction_input)
-
-# The result will be in the form of an array of probabilities for each class ([probability of 0, probability of 1])
-# For binary classification, the probability of class 1 can be taken as the confidence level
-confidence_level = predicted_probabilities[0][1]
-
-# Output the prediction and confidence level
-predicted_fire_risk = model.predict(prediction_input)[0]
 
 # Create a DataFrame with date, predicted_fire_risk, and confidence level
 prediction_df = pd.DataFrame({
     'date': last_valid_observation['DATE'],
-    'predicted_fire_risk': predicted_fire_risk,
-    'confidence_level': confidence_level
+    'predicted_fire_risk': [predicted_fire_risk],
+    'confidence_level': [confidence_level]
 })
 
 print(prediction_df)
@@ -280,9 +515,13 @@ def get_square_corners(lat, lon, distance_km=0.5):
     return [ne, se, sw, nw, ne]  # Return coordinates to form a closed square
 
 # Function to determine circle size based on prediction score
-def get_circle_radius(prediction_score):
-    # This is a simple linear scaling. You can adjust the scaling factor as needed.
-    return prediction_score * 10000000  # for example, 10 meters per score unit
+def get_circle_radius(prediction_score, min_radius=1000, max_radius=8500):
+    # Scale the prediction score (0 to 1) to the radius range (min_radius to max_radius)
+    scaled_radius = prediction_score * (max_radius - min_radius) + min_radius
+
+    # Ensure the radius does not go below the minimum or above the maximum
+    return max(min(scaled_radius, max_radius), min_radius)
+
 
 
 # Function to create a map with fire locations marked as squares
