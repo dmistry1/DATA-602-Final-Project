@@ -117,9 +117,9 @@ def mauiWildfire():
                     new_rows.append({'date': date, 'Fire_exist': fire_exist})
 
                 # Concatenate new rows to the binary data DataFrame
-                binary_data = pd.concat([fire_weather_ml_binary, pd.DataFrame(new_rows)], ignore_index=True)
+                fire_weather_ml_binary = pd.concat([fire_weather_ml_binary, pd.DataFrame(new_rows)], ignore_index=True)
 
-                uploadToGCS.upload_csv_to_gcs('fire_weather_dates_ml_binary','fire_weather_dates_ml_binary.csv', binary_data)
+                uploadToGCS.upload_csv_to_gcs('fire_weather_dates_ml_binary','fire_weather_dates_ml_binary.csv', fire_weather_ml_binary)
 
     prediction  = getMLPrediction.getPrediction()
     map_maui = createFireMap.getFireMap(prediction)
