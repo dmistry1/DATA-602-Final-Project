@@ -105,7 +105,7 @@ function App() {
           <span className='text'>This map repersents active fires in Maui and predicts if an active fire is likely to occur.</span>
           <div >
             {currentDateMinusTwo && (
-              <span className='small-text'>Showing map for: {currentDateMinusTwo.toLocaleDateString()}</span>
+              <span className='small-text'>Showing map with the most up to date valid data</span>
             )}
           </div>
           <div>

@@ -26,7 +26,4 @@ def getData(fileName):
     # Read the CSV file into a Pandas DataFrame
     df = pd.read_csv(temp_local_file)
 
-    # Optionally, you can remove the temporary file
-    # os.remove(temp_local_file)
-
     return df
