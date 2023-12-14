@@ -119,6 +119,7 @@ from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 from imblearn.over_sampling import SMOTE
+import pandas as pd
 
 # Load the datasets
 df_weather = pd.read_csv('/content/drive/My Drive/combined_fire_weather_data_pastyr.csv')
@@ -170,28 +171,28 @@ print(confusion_matrix(y_test, y_pred))
 
 
 # Add the test set indices to X_test for merging
-X_test_with_index = X_test.copy()
-X_test_with_index['index'] = X_test.index
+#X_test_with_index = X_test.copy()
+#X_test_with_index['index'] = X_test.index
 
 # Create a DataFrame with test features, actual labels, and predictions
-results_df = X_test_with_index.join(y_test, on='index', how='left', rsuffix='_actual')
-results_df['predicted_fire_risk'] = y_pred
+#results_df = X_test_with_index.join(y_test, on='index', how='left', rsuffix='_actual')
+#results_df['predicted_fire_risk'] = y_pred
 
 # Rename 'Fire_exist' in y_test to avoid conflict during join
-y_test_renamed = y_test.rename('Fire_exist_actual')
+#y_test_renamed = y_test.rename('Fire_exist_actual')
 
 # Join results_df with y_test_renamed and combined_df to get the DATE column
-results_df = results_df.join(y_test_renamed, how='left')
-results_df = results_df.join(combined_df[['DATE']], how='left')
+#results_df = results_df.join(y_test_renamed, how='left')
+#results_df = results_df.join(combined_df[['DATE']], how='left')
 
 # Filter for the dates where the model predicted a fire
-predicted_fires = results_df[results_df['predicted_fire_risk'] == 1]
+#predicted_fires = results_df[results_df['predicted_fire_risk'] == 1]
 
 # Extract the dates of these predictions
-predicted_fire_dates = predicted_fires['DATE']
+#predicted_fire_dates = predicted_fires['DATE']
 
 # Display the dates
-print(predicted_fire_dates)
+#print(predicted_fire_dates)
 
 # THIS WAS LOF MODEL
 # import pandas as pd
